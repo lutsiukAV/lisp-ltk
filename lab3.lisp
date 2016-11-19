@@ -1,0 +1,173 @@
+(load "ltk/ltk.lisp")
+(in-package :ltk)
+
+
+(defclass Vegetable()
+	(
+		(name :accessor veg-name :initarg :vname)
+		(calory :accessor veg-calory :initarg :vcalory)
+		(weight :accessor veg-weight :initarg :vweight)
+		(price :accessor veg-price :initarg :vprice)
+	)
+)
+
+(defclass Onion(Vegetable)
+	()
+)
+
+(defclass Tomato(Vegetable)
+	()
+)
+
+(defclass Pepper(Vegetable)
+	()
+)
+
+(defclass Cucumber(Vegetable)
+	()
+)
+
+(defmethod print-object ((v Vegetable) out)
+   (format out "~s cal:~s wgh:~s, " (veg-name v) (veg-calory v) (veg-weight v)))
+
+
+(defclass Salad()
+	((vegetables :initform '() :accessor veg-lst)
+	)
+)
+
+(defmethod add-vegetable ((s Salad) (v Vegetable))
+	(setf (veg-lst s) (cons v (veg-lst s)))
+)
+
+(defun sum-vegetable-calories (vegetables)
+	(cond
+		((null vegetables) 0)
+		(T(+ (veg-calory (car vegetables)) (sum-vegetable-calories (cdr vegetables))))
+	)
+)
+
+(defmethod vegetable-with-calory-inner (vegs cal-min cal-max)
+	(cond
+		((null vegs) NIL)
+		((and (>= (veg-calory (car vegs)) cal-min)(<= (veg-calory (car vegs)) cal-max))
+			 (cons (car vegs) (vegetable-with-calory-inner (cdr vegs) cal-min cal-max))
+		)
+		(T(vegetable-with-calory-inner (cdr vegs) cal-min cal-max))
+	)
+)
+
+(defmethod vegetable-with-calory ((s Salad) cal-min cal-max)
+	(vegetable-with-calory-inner (veg-lst s) cal-min cal-max)
+)
+
+(defmethod get-total-calory ((s Salad))
+	(sum-vegetable-calories (veg-lst s))
+)
+
+(defun make-salad()
+	(defparameter s (make-instance 'Salad))
+	s
+)
+
+
+(defun gui() 
+	(with-ltk()
+		(setq sld (make-instance 'Salad))
+		(let* (
+				(frame_ (make-instance 'frame))
+	            (text-label-tomato   (make-instance 'label :master frame_ :text "tomato : "))
+	            (text-label-onion    (make-instance 'label :master frame_ :text "onion : "))
+	            (text-label-pepper   (make-instance 'label :master frame_ :text "pepper : "))
+	            (text-label-cucumber (make-instance 'label :master frame_ :text "cucumber : "))
+	            (text-label-calority (make-instance 'label :master frame_ :text "Total calority"))
+	            (text-label-sorted   (make-instance 'label :master frame_ :text "<< Sorted salad >>"))
+	            (text-label-bounds   (make-instance 'label :master frame_ :text "<< Calory bounds >>"))
+	            (text-field-low      (make-instance 'entry :master frame_ :text "From"))
+	            (text-field-high     (make-instance 'entry :master frame_ :text "To"))
+
+	            (btn-tomato (make-instance 'button :master frame_ :text "Tomato"
+                            	:command (lambda() 
+                            			 	(add-vegetable sld (make-instance 'Tomato :vname "Tomato" :vcalory 10 :vweight 100 :vprice 8))
+                            			 	(setf (text text-label-tomato) (concatenate 'string (text text-label-tomato) "+"))
+                                         )
+                            )
+	            )
+	            (btn-onion (make-instance 'button :master frame_ :text "Onion"
+                            	:command (lambda() 
+                            			 	(add-vegetable sld (make-instance 'Onion :vname "Onion" :vcalory 35 :vweight 111 :vprice 1))
+                            			 	(setf (text text-label-onion) (concatenate 'string (text text-label-onion) "+"))
+                                         )
+                            )
+	            )
+	            (btn-pepper (make-instance 'button :master frame_ :text "Pepper"
+                            	:command (lambda() 
+                            			 	(add-vegetable sld (make-instance 'Pepper :vname "Pepper" :vcalory 20 :vweight 50 :vprice 15))
+                            			 	(setf (text text-label-pepper) (concatenate 'string (text text-label-pepper) "+"))
+                                         )
+                            )
+	            )
+	            (btn-cucumber (make-instance 'button :master frame_ :text "Cucumber"
+                            	:command (lambda() 
+                            			 	(add-vegetable sld (make-instance 'Cucumber :vname "Cucumber" :vcalory 15 :vweight 75 :vprice 12))
+                            			 	(setf (text text-label-cucumber) (concatenate 'string (text text-label-cucumber) "+"))
+                                         )
+                            )
+	            )
+	            (btn-uncook (make-instance 'button :master frame_ :text "Uncook"
+                            	:command (lambda()
+                            				(setq sld (make-instance 'Salad))
+
+                            			 	(setf (text text-label-tomato) "tomato : ")
+                            			 	(setf (text text-label-onion) "onion : ")
+                            			 	(setf (text text-label-pepper) "pepper : ")
+                            			 	(setf (text text-label-cucumber) "cucumber : ")
+                            			 	(setf (text text-label-calority) "Total calority")
+                            			 	(setf (text text-label-sorted) "<< Sorted salad >>")
+                            			 	(setf (text text-label-bounds) "<< Calory bounds >>")
+                                         )
+                            )
+	            )
+	            (btn-calority (make-instance 'button :master frame_ :text "Total calority"
+                            	:command (lambda()
+                            				(setf (text text-label-calority) (concatenate 'string "Total calority : " (write-to-string (get-total-calory sld))))
+                                         )
+                            )
+	            )
+	            (btn-sorted (make-instance 'button :master frame_ :text "Sort!"
+	            				:command (lambda()
+	            							(setf (text text-label-sorted) (sort (veg-lst sld) #'< :key #'veg-weight))
+	            						 )
+	            			)
+	            )
+	            (btn-bounds (make-instance 'button :master frame_ :text "Bounds!"
+	            				:command (lambda()
+	            							(setf (text text-label-bounds) (vegetable-with-calory sld (read-from-string (text text-field-low)) (read-from-string (text text-field-high))))
+	            						 )
+	            			)
+	            )
+            )
+			(pack frame_ :padx 75 :pady 75)
+	        (pack text-label-tomato :padx 20 :pady :3)
+	        (pack text-label-onion :padx 20 :pady :3)
+	        (pack text-label-pepper :padx 20 :pady :3)
+	        (pack text-label-cucumber :padx 20 :pady :3)
+	        (pack text-label-calority :padx 20 :pady :3)
+	        (pack text-label-sorted :padx 20 :pady :3)
+	        (pack text-label-bounds :padx 20 :pady :3)
+	        (pack text-field-low :padx 20 :pady :3)
+	        (pack text-field-high :padx 20 :pady :3)
+	        (pack btn-tomato :side :left)
+	        (pack btn-onion :side :left)
+	        (pack btn-pepper :side :left)
+	        (pack btn-cucumber :side :left)
+	        (pack btn-uncook :side :left)
+	        (pack btn-calority :side :left)
+	        (pack btn-sorted :side :left)
+	        (pack btn-bounds :side :left)
+	        ()
+		)
+	)
+)
+
+(gui)
